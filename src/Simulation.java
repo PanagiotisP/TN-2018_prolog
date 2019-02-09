@@ -17,8 +17,9 @@ public class Simulation {
         creatorKB.addClientToBase("client.csv");
         creatorKB.addLinesToBase("lines.csv");
         creatorKB.addRulesToBase();
+        creatorKB.addNodes("nodes.csv");
 
-        JIPEngine engine = new JIPEngine();
+     /*   JIPEngine engine = new JIPEngine();
         engine.consultFile(kb);
         JIPTermParser parser = engine.getTermParser();
         JIPQuery engineQuery;
@@ -32,7 +33,7 @@ public class Simulation {
             System.out.println(x + " prefers " + term.getVariablesTable().get("Z").toString());
             term = engineQuery.nextSolution();
         }
-
+*/
 
     }
 }

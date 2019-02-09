@@ -126,6 +126,14 @@ public class KnowledgeBaseCreator {
         printWriter.println("getClientPosCoord(X, Y) :- client(X, Y, _, _, _, _, _).");
         printWriter.println("getClientDesCoord(X, Y) :- client(_, _, X, Y, _, _, _).");
         printWriter.println("getClientTime(T) :- client(_, _, _, _, T, _, _).");
+        printWriter.println("direction(Oneway, Res) :- Oneway = yes -> Res = 1 ; (Oneway = -1 -> Res = -1 ; Res = 0).");
+        printWriter.println("canMoveFromTo(X,Y, ConnectingLine) :- (node(_,_,ConnectingLine, X,IndexX)," +
+                "line(ConnectingLine, _, Oneway, _, _, _), " +
+                "drivable(ConnectingLine), " +
+                "direction(Oneway, Res), " +
+                "(Res = 1 -> IndexY is IndexX + 1 " +
+                ";(Res = -1 -> IndexY is IndexX - 1" +
+                "; (IndexY is IndexX - 1 ; IndexY is IndexX + 1))), node(_,_,ConnectingLine, Y, IndexY))." );
         printWriter.close();
     }
 
@@ -133,6 +141,21 @@ public class KnowledgeBaseCreator {
         LinkedList<String[]> fields;
         csvReader = new CSVReader(nodesFilename);
         fields = csvReader.readCSV();
+        JIPEngine engine = new JIPEngine();
+        try {
+            engine.consultFile(filename);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        JIPTermParser parser = engine.getTermParser();
+        JIPTermParser retractParser = engine.getTermParser();
+        JIPQuery engineQuery,retractQuery;
+        JIPTerm term;
+        engineQuery = engine.openSynchronousQuery(parser.parseTerm("dynamic line/6"));
+        engineQuery = engine.openSynchronousQuery(parser.parseTerm("line(ID,_,_,_,_,_),\\+ drivable(ID)."));
+        while((term = engineQuery.nextSolution())!=null){
+            retractQuery = engine.openSynchronousQuery(retractParser.parseTerm("retract(line("+term.getVariablesTable().get("ID").toString()+",_,_,_,_,_))."));
+        }
 
         int roadId=0;
         try {
@@ -144,11 +167,14 @@ public class KnowledgeBaseCreator {
 
         for (String[] nodesFields : fields) {
             // nodes in prolog in form (X, Y, line_id, node_id)
-            printWriter.print("node(");
-            for (int i = 0; i < 4; i++) {
-                printWriter.printf("%s,", nodesFields[i]);
+            engineQuery = engine.openSynchronousQuery(parser.parseTerm("line("+nodesFields[2]+",_,_,_,_,_)."));
+            if (engineQuery.nextSolution() != null) {
+                printWriter.print("node(");
+                for (int i = 0; i < 4; i++) {
+                    printWriter.printf("%s,", nodesFields[i]);
+                }
+                printWriter.printf("%d).\n", roadId++);
             }
-            printWriter.printf("%d).\n", roadId++);
         }
         printWriter.println();
         printWriter.close();
