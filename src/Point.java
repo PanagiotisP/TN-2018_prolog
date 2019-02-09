@@ -5,16 +5,20 @@ public class Point {
 
     private double x;
     private double y;
+    private int line_id;
+    private int node_id;
     private double heuristic;
     private double pathCost;
     public LinkedList<Point> neighboring;
     public HashSet<Point> previous;
     public LinkedList<Integer> startingIds;
 
-    public Point(double x, double y) {
+    public Point(double x, double y,int lid, int nid) {
         this.x = x;
         this.y = y;
         this.pathCost = -1;
+        this.line_id = lid;
+        this.node_id = nid;
         neighboring = new LinkedList<>();
         previous = new HashSet<>();
         startingIds = new LinkedList<>();

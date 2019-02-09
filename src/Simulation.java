@@ -32,5 +32,7 @@ public class Simulation {
             System.out.println(x + " prefers " + term.getVariablesTable().get("Z").toString());
             term = engineQuery.nextSolution();
         }
+
+
     }
 }

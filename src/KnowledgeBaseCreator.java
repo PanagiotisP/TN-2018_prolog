@@ -1,3 +1,8 @@
+import com.ugos.jiprolog.engine.JIPEngine;
+import com.ugos.jiprolog.engine.JIPQuery;
+import com.ugos.jiprolog.engine.JIPTerm;
+import com.ugos.jiprolog.engine.JIPTermParser;
+
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -123,4 +128,42 @@ public class KnowledgeBaseCreator {
         printWriter.println("getClientTime(T) :- client(_, _, _, _, T, _, _).");
         printWriter.close();
     }
-}
+
+    public void addNodes(String nodesFilename){
+        LinkedList<String[]> fields;
+        csvReader = new CSVReader(nodesFilename);
+        fields = csvReader.readCSV();
+
+        try {
+            file = new FileWriter(filename, true);
+            printWriter = new PrintWriter(file);
+        } catch (IOException we) {
+            System.out.println("cant create : ");
+        }
+        for (String[] nodesFields : fields) {
+            // nodes in prolog in form (X, Y, line_id, node_id)
+            printWriter.print("node(");
+            for (int i = 0; i < 3; i++) {
+                printWriter.printf("%s,", nodesFields[i]);
+            }
+            printWriter.printf("%s).\n", nodesFields[3]);
+        }
+        printWriter.println();
+        printWriter.close();
+    }
+
+    public void canMove(){
+        JIPEngine engine = new JIPEngine();
+        try {
+            engine.consultFile(filename);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        JIPTermParser parser = engine.getTermParser();
+        JIPQuery engineQuery;
+        JIPTerm term;
+        engineQuery = engine.openSynchronousQuery(parser.parseTerm("nodes(X,Y,Lid,Nid)."));
+        term = engineQuery.nextSolution();
+
+    }
+
