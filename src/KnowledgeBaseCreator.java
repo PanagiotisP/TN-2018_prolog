@@ -134,36 +134,26 @@ public class KnowledgeBaseCreator {
         csvReader = new CSVReader(nodesFilename);
         fields = csvReader.readCSV();
 
+        int roadId=0;
         try {
             file = new FileWriter(filename, true);
             printWriter = new PrintWriter(file);
         } catch (IOException we) {
             System.out.println("cant create : ");
         }
+
         for (String[] nodesFields : fields) {
             // nodes in prolog in form (X, Y, line_id, node_id)
             printWriter.print("node(");
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 4; i++) {
                 printWriter.printf("%s,", nodesFields[i]);
             }
-            printWriter.printf("%s).\n", nodesFields[3]);
+            printWriter.printf("%d).\n", roadId++);
         }
         printWriter.println();
         printWriter.close();
     }
 
-    public void canMove(){
-        JIPEngine engine = new JIPEngine();
-        try {
-            engine.consultFile(filename);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        JIPTermParser parser = engine.getTermParser();
-        JIPQuery engineQuery;
-        JIPTerm term;
-        engineQuery = engine.openSynchronousQuery(parser.parseTerm("nodes(X,Y,Lid,Nid)."));
-        term = engineQuery.nextSolution();
 
     }
 
