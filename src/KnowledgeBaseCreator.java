@@ -100,25 +100,17 @@ public class KnowledgeBaseCreator {
             System.out.println("cant create : ");
         }
         // valid fields of highway
-        printWriter.println("validHighway(motorway).");
-        printWriter.println("validHighway(trunk).");
-        printWriter.println("validHighway(primary).");
-        printWriter.println("validHighway(secondary).");
-        printWriter.println("validHighway(tertiary).");
-        printWriter.println("validHighway(unclassified).");
-        printWriter.println("validHighway(residential).");
-        printWriter.println("validHighway(motorway_link).");
-        printWriter.println("validHighway(trunk_link).");
-        printWriter.println("validHighway(primary_link).");
-        printWriter.println("validHighway(secondary_link).");
-        printWriter.println("validHighway(tertiary_link).");
-        printWriter.println("validHighway(living_street).");
+        String[] highways = {"motorway", "trunk", "primary", "secondary", "tertiary", "unclassified", "residential",
+                "motorway_link", "trunk_link", "primary_link", "secondary_link", "tertiary_link", "living_street"};
+        for(String highwayType : highways) {
+            printWriter.println("validHighway(" + highwayType + ").");
+        }
         printWriter.println();
-        printWriter.println("validAccessibility(yes).");
-        printWriter.println("validAccessibility(permissive).");
-        printWriter.println("validAccessibility(destination).");
-        printWriter.println("validAccessibility(null).");
-        printWriter.println("validAccessibility(allowed).");
+
+        String[] accessibility = {"yes", "permissive", "destination", "null", "allowed"};
+        for(String accessibilityType : accessibility) {
+            printWriter.println("validAccessibility(" + accessibilityType + ").");
+        }
         printWriter.println("drivable(X) :- line(X, Highway, _, _, Access, _), validAccessibility(Access), validHighway(Highway).");
         printWriter.println();
         printWriter.println("validPairing(X) :- taxi(_, _, X, yes, MaxN, TaxiLangs, _), client(_, _, _, _, _, Person, ClientLang), Person =< MaxN, member(ClientLang, TaxiLangs).");
