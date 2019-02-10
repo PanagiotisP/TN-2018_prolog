@@ -1,3 +1,5 @@
+import com.ugos.jiprolog.engine.*;
+
 import java.util.HashSet;
 import java.util.LinkedList;
 
@@ -5,27 +7,39 @@ public class Point {
 
     private double x;
     private double y;
-    private int line_id;
-    private int node_id;
+    private long node_id;
     private double heuristic;
     private double pathCost;
-    public LinkedList<Point> neighboring;
     public HashSet<Point> previous;
     public LinkedList<Integer> startingIds;
+    public static JIPEngine engine = null;
 
-    public Point(double x, double y,int lid, int nid) {
-        this.x = x;
-        this.y = y;
+    public Point(long nid) {
+        JIPTermParser parser = engine.getTermParser();
+        JIPQuery engineQuery;
+        JIPTerm term;
+        engineQuery = engine.openSynchronousQuery(parser.parseTerm("node(X,Y, _," + Long.toString(nid) + ",_)."));
+        term = engineQuery.nextSolution();
+        if (term != null) {
+            this.x = Double.parseDouble(term.getVariablesTable().get("X").toString());
+            this.y = Double.parseDouble(term.getVariablesTable().get("Y").toString());
+        }
         this.pathCost = -1;
-        this.line_id = lid;
         this.node_id = nid;
-        neighboring = new LinkedList<>();
         previous = new HashSet<>();
         startingIds = new LinkedList<>();
     }
 
-    public void newNeighbor(Point neo) {
-        neighboring.add(neo);
+    public LinkedList<Long> getNeighbours() {
+        JIPTermParser parser = engine.getTermParser();
+        JIPQuery engineQuery;
+        JIPTerm term;
+        LinkedList<Long> neighbouringIds = new LinkedList<>();
+        engineQuery = engine.openSynchronousQuery(parser.parseTerm("canMoveFromTo(" + node_id + ", Neighbour, _)."));
+        while ((term = engineQuery.nextSolution()) != null) {
+            neighbouringIds.add((long) Double.parseDouble(term.getVariablesTable().get("Neighbour").toString()));
+        }
+        return neighbouringIds;
     }
 
     public double calculateDistance(Point target) {
@@ -36,6 +50,12 @@ public class Point {
         heuristic = calculateDistance(target);
     }
 
+
+    @Override
+    public int hashCode() {
+        return (int) node_id - 2147483647;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -43,9 +63,7 @@ public class Point {
 
         Point point = (Point) o;
 
-        if (x != point.x) return false;
-        if (y != point.y) return false;
-
+        if (node_id != point.getNode_id()) return false;
         return true;
     }
     //DFS scan of target to previous to find all nearest paths
@@ -78,16 +96,16 @@ public class Point {
         return x;
     }
 
-    public void setX(double x) {
-        this.x = x;
-    }
-
     public double getY() {
         return y;
     }
 
-    public void setY(double y) {
-        this.y = y;
+    public double getNode_id() {
+        return node_id;
+    }
+
+    public void setNode_id(long node_id) {
+        this.node_id = node_id;
     }
 
 

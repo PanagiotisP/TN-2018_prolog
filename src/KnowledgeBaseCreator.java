@@ -2,6 +2,8 @@ import com.ugos.jiprolog.engine.JIPEngine;
 import com.ugos.jiprolog.engine.JIPQuery;
 import com.ugos.jiprolog.engine.JIPTerm;
 import com.ugos.jiprolog.engine.JIPTermParser;
+import com.ugos.jiprolog.engine.JIPEvaluationException;
+
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -13,6 +15,7 @@ public class KnowledgeBaseCreator {
     private CSVReader csvReader;
     private PrintWriter printWriter = null;
     private FileWriter file = null;
+    public static  JIPEngine engine = new JIPEngine();
 
     public KnowledgeBaseCreator(String file){
         filename = file;
@@ -141,23 +144,17 @@ public class KnowledgeBaseCreator {
         LinkedList<String[]> fields;
         csvReader = new CSVReader(nodesFilename);
         fields = csvReader.readCSV();
-        JIPEngine engine = new JIPEngine();
+
         try {
             engine.consultFile(filename);
         } catch (IOException e) {
             e.printStackTrace();
         }
         JIPTermParser parser = engine.getTermParser();
-        JIPTermParser retractParser = engine.getTermParser();
-        JIPQuery engineQuery,retractQuery;
-        JIPTerm term;
-        engineQuery = engine.openSynchronousQuery(parser.parseTerm("dynamic line/6"));
-        engineQuery = engine.openSynchronousQuery(parser.parseTerm("line(ID,_,_,_,_,_),\\+ drivable(ID)."));
-        while((term = engineQuery.nextSolution())!=null){
-            retractQuery = engine.openSynchronousQuery(retractParser.parseTerm("retract(line("+term.getVariablesTable().get("ID").toString()+",_,_,_,_,_))."));
-        }
+        JIPQuery engineQuery;
 
-        int roadId=0;
+        JIPTerm term;
+        int roadId = 0;
         try {
             file = new FileWriter(filename, true);
             printWriter = new PrintWriter(file);
@@ -167,7 +164,7 @@ public class KnowledgeBaseCreator {
 
         for (String[] nodesFields : fields) {
             // nodes in prolog in form (X, Y, line_id, node_id)
-            engineQuery = engine.openSynchronousQuery(parser.parseTerm("line("+nodesFields[2]+",_,_,_,_,_)."));
+            engineQuery = engine.openSynchronousQuery(parser.parseTerm("drivable(" + nodesFields[2] + ")."));
             if (engineQuery.nextSolution() != null) {
                 printWriter.print("node(");
                 for (int i = 0; i < 4; i++) {
