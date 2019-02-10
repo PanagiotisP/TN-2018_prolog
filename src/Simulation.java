@@ -84,7 +84,7 @@ public class Simulation {
             temp.startingIds.add(taxiId);
             taxiList.add(temp);
         }
-
+        HashMap<long,Point> graph = new HashMap<long, Point>(500);
         PriorityQueue<Point> openSet = new PriorityQueue<>(taxiList.size(), new Comparator<>() {
             @Override
             public int compare(Point taxi1, Point taxi2) {
@@ -110,7 +110,9 @@ public class Simulation {
         for (Point taxi : taxiList) {
             openSet.clear();
             closedSet.clear();
+            graph.clear();
             openSet.add(taxi);
+            graph.put(taxi.getNode_id(),taxi);
             boolean found = false;
             while(!openSet.isEmpty()) {
                 System.out.println(openSet.size());
@@ -122,28 +124,16 @@ public class Simulation {
                 }
 
                 for(long neighbourId : top.getNeighbours()) {
-                    Point neighbour = new Point(neighbourId);
-                    if(!closedSet.contains(neighbour)) {
+                    Point neighbour = graph.get(neighbourId);
+                    if(neighbour == null || top.getPathCost() + top.calculateDistance(neighbour) == neighbour.getPathCost()){
+                        neighbour =  new Point(neighbourId);
                         neighbour.setPathCost(top.getPathCost() + top.calculateDistance(neighbour));
                         neighbour.previous.add(top);
                         neighbour.calculateHeuristic(target);
                         openSet.add(neighbour);
+                        graph.put(neighbourId,neighbour);
                     }
-                    else if (top.getPathCost() + top.calculateDistance(neighbour) == neighbour.getPathCost()) {
-                        /* thewrw oti to kaname gia pollapla taxi
-                        boolean validToAdd = true;
-                        for (Point s : neighbour.previous) {
-                            if (s.equals(top)) {
-                                validToAdd = false;
-                            }
-                        }
-                        if (validToAdd) {
-                            neighbour.previous.add(top);
-                        }
-                         */
-                        neighbour.previous.add(top);
-                        openSet.add(neighbour);
-                    } else if (top.getPathCost() + top.calculateDistance(neighbour) < neighbour.getPathCost()) {
+                    else if (top.getPathCost() + top.calculateDistance(neighbour) < neighbour.getPathCost()) {
                         neighbour.setPathCost(top.getPathCost() + top.calculateDistance(neighbour));
                         neighbour.previous.clear();
                         neighbour.previous.add(top);
