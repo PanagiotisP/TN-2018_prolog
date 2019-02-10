@@ -12,6 +12,7 @@ public class Point {
     private double pathCost;
     public HashSet<Point> previous;
     public LinkedList<Integer> startingIds;
+    public LinkedList<Integer> taxiIds;
     public static JIPEngine engine = null;
 
     public Point(long nid) {
@@ -28,6 +29,13 @@ public class Point {
         this.node_id = nid;
         previous = new HashSet<>();
         startingIds = new LinkedList<>();
+        taxiIds = new LinkedList<>();
+    }
+
+    public Point(long tId,double x, double y){
+        this.x = x;
+        this.y = y;
+        this.node_id = tId;
     }
 
     public LinkedList<Long> getNeighbours() {
@@ -49,7 +57,6 @@ public class Point {
     public void calculateHeuristic(Point target) {
         heuristic = calculateDistance(target);
     }
-
 
     @Override
     public int hashCode() {
@@ -100,15 +107,8 @@ public class Point {
         return y;
     }
 
-    public double getNode_id() {
+    public long getNode_id() {
         return node_id;
     }
-
-    public void setNode_id(long node_id) {
-        this.node_id = node_id;
-    }
-
-
-
 
 }
