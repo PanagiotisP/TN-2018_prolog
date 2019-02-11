@@ -19,7 +19,7 @@ public class Point {
         JIPTermParser parser = engine.getTermParser();
         JIPQuery engineQuery;
         JIPTerm term;
-        engineQuery = engine.openSynchronousQuery(parser.parseTerm("node(X,Y, _," + Long.toString(nid) + ",_)."));
+        engineQuery = engine.openSynchronousQuery(parser.parseTerm("node(" + Long.toString(nid) + ", _, X, Y)."));
         term = engineQuery.nextSolution();
         if (term != null) {
             this.x = Double.parseDouble(term.getVariablesTable().get("X").toString());
@@ -44,10 +44,10 @@ public class Point {
         JIPTermParser parser = engine.getTermParser();
         JIPQuery engineQuery;
         JIPTerm term;
-        LinkedList<Long> neighbours = new LinkedList<>();
         LinkedList<LinkedList<Long>> toReturn = new LinkedList<>();
         engineQuery = engine.openSynchronousQuery(parser.parseTerm("canMoveFromTo(" + node_id + ", Neighbour, Line)."));
         while ((term = engineQuery.nextSolution()) != null) {
+            LinkedList<Long> neighbours = new LinkedList<>();
             neighbours.add((long) Double.parseDouble(term.getVariablesTable().get("Neighbour").toString()));
             neighbours.add((long) Double.parseDouble(term.getVariablesTable().get("Line").toString()));
             toReturn.add(neighbours);

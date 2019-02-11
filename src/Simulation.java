@@ -65,7 +65,7 @@ public class Simulation {
         double minDistance = 10000.0;
         long targetId = 0;
 
-        JIPQuery engineNodeQuery = engine.openSynchronousQuery(parser.parseTerm("node(X, Y, _, Id, _)."));
+        JIPQuery engineNodeQuery = engine.openSynchronousQuery(parser.parseTerm("node(Id, _, X, Y)."));
         double[] tempdist = new double[taxiIdList.size()];
         for (i = 0; i < tempdist.length; i++) {
             tempdist[i] = 10000.0;
@@ -127,33 +127,34 @@ public class Simulation {
             while(!openSet.isEmpty()) {
                 System.out.println(openSet.size());
                 Point top = openSet.peek();
-                closedSet.add(top);
                 openSet.remove(top);
-                if (found && top.getPathCost() + top.getHeuristic() > target.getPathCost()) {
-                    break;
-                }
+                if(!closedSet.contains(top)) {
+                    closedSet.add(top);
+                    if (found && top.getPathCost() + top.getHeuristic() > target.getPathCost()) {
+                        break;
+                    }
 
-                for(LinkedList<Long> neighbourInfo : top.getNeighbours()) {
-                    long neighbourId = neighbourInfo.getFirst();
-                    long lineId = neighbourInfo.getLast();
-                    Point neighbour = graph.get(neighbourId);
-                    if(neighbour == null || top.getPathCost() + top.calculateDistance(neighbour,lineId,time) == neighbour.getPathCost()){
-                        neighbour =  new Point(neighbourId);
-                        neighbour.setPathCost(top.getPathCost() + top.calculateDistance(neighbour,lineId,time));
-                        neighbour.previous.add(top);
-                        neighbour.calculateHeuristic(target);
-                        openSet.add(neighbour);
-                        graph.put(neighbourId,neighbour);
-                    }
-                    else if (top.getPathCost() + top.calculateDistance(neighbour,lineId,time) < neighbour.getPathCost()) {
-                        neighbour.setPathCost(top.getPathCost() + top.calculateDistance(neighbour,lineId,time));
-                        neighbour.previous.clear();
-                        neighbour.previous.add(top);
-                        openSet.add(neighbour);
-                    }
-                    if (neighbour.equals(target)) {
-                        target.previous = neighbour.previous;
-                        found = true;
+                    for (LinkedList<Long> neighbourInfo : top.getNeighbours()) {
+                        long neighbourId = neighbourInfo.getFirst();
+                        long lineId = neighbourInfo.getLast();
+                        Point neighbour = graph.get(neighbourId);
+                        if (neighbour == null || top.getPathCost() + top.calculateDistance(neighbour, lineId, time) == neighbour.getPathCost()) {
+                            neighbour = new Point(neighbourId);
+                            neighbour.setPathCost(top.getPathCost() + top.calculateDistance(neighbour, lineId, time));
+                            neighbour.previous.add(top);
+                            neighbour.calculateHeuristic(target);
+                            openSet.add(neighbour);
+                            graph.put(neighbourId, neighbour);
+                        } else if (top.getPathCost() + top.calculateDistance(neighbour, lineId, time) < neighbour.getPathCost()) {
+                            neighbour.setPathCost(top.getPathCost() + top.calculateDistance(neighbour, lineId, time));
+                            neighbour.previous.clear();
+                            neighbour.previous.add(top);
+                            //openSet.add(neighbour);
+                        }
+                        if (neighbour.equals(target)) {
+                            target.previous = neighbour.previous;
+                            found = true;
+                        }
                     }
                 }
             }

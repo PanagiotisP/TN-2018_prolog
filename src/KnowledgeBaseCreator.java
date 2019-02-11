@@ -151,13 +151,6 @@ public class KnowledgeBaseCreator {
         printWriter.println();
         printWriter.println("validPairing(X) :- taxi(_, _, X, yes, MaxN, TaxiLangs, _), client(_, _, _, _, _, Person, ClientLang), Person =< MaxN, member(ClientLang, TaxiLangs).");
         printWriter.println("direction(Oneway, Res) :- Oneway = yes -> Res = 1 ; (Oneway = -1 -> Res = -1 ; Res = 0).");
-        //        printWriter.println("canMoveFromTo(X,Y, ConnectingLine) :- (node(_,_,ConnectingLine, X,IndexX)," +
-//                "line(ConnectingLine, _, Oneway, _, _, _), " +
-//                "drivable(ConnectingLine), " +
-//                "direction(Oneway, Res), " +
-//                "(Res = 1 -> IndexY is IndexX + 1 " +
-//                ";(Res = -1 -> IndexY is IndexX - 1" +
-//                "; (IndexY is IndexX - 1 ; IndexY is IndexX + 1))), node(_,_,ConnectingLine, Y, IndexY))." );
         printWriter.close();
         try {
             engine.consultFile(filename);
@@ -178,15 +171,11 @@ public class KnowledgeBaseCreator {
         JIPTerm term;
         long lastLineId = -1;
         long lastNodeId = -1;
-        int roadId = 0;
         for (String[] nodesFields : fields) {
-            // nodes in prolog in form (X, Y, line_id, node_id)
+            // nodes in prolog in form (node_id, line_id X, Y)
             engineQuery = engine.openSynchronousQuery(parser.parseTerm("line(" + nodesFields[2] + ", _, Oneway, _, _, _)."));
             if ((term = engineQuery.nextSolution()) != null) {
                 if ((long) Double.parseDouble(nodesFields[2]) == lastLineId) {
-                    if ((long) Double.parseDouble(nodesFields[2]) == 31486421) {
-                        int kaka = 0;
-                    }
                     switch (term.getVariablesTable().get("Oneway").toString()) {
                         case "yes":
                             nodeQuery = engine.openSynchronousQuery(parser.parseTerm("assert(canMoveFromTo(" +
@@ -201,6 +190,7 @@ public class KnowledgeBaseCreator {
                         default:
                             nodeQuery = engine.openSynchronousQuery(parser.parseTerm("assert(canMoveFromTo(" +
                                     nodesFields[3] + ',' + Long.toString(lastNodeId) + ',' + Long.toString(lastLineId) + "))."));
+                            if (nodeQuery.nextSolution() == null) throw new JIPEvaluationException("addLine: assertion failed");
                             nodeQuery = engine.openSynchronousQuery(parser.parseTerm("assert(canMoveFromTo(" +
                                     Long.toString(lastNodeId) + ',' + nodesFields[3] + ',' + Long.toString(lastLineId) + "))."));
                             if (nodeQuery.nextSolution() == null) throw new JIPEvaluationException("addLine: assertion failed");
@@ -211,11 +201,7 @@ public class KnowledgeBaseCreator {
                 lastLineId = (long) Double.parseDouble(nodesFields[2]);
                 lastNodeId = (long) Double.parseDouble(nodesFields[3]);
 
-                String nodeString = "node(";
-                for (int i = 0; i < 4; i++) {
-                    nodeString += nodesFields[i] + ',';
-                }
-                nodeString += roadId++ + ")";
+                String nodeString = "node(" + nodesFields[3] + ',' + nodesFields[2] + ',' + nodesFields[0] + ',' + nodesFields[1] + ')';
                 nodeQuery = engine.openSynchronousQuery(parser.parseTerm("assert(" + nodeString + ")."));
                 if (nodeQuery.nextSolution() == null) throw new JIPEvaluationException("addLine: assertion failed");
             }
