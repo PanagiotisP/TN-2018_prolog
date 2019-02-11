@@ -38,24 +38,93 @@ public class Point {
         this.node_id = tId;
     }
 
-    public LinkedList<Long> getNeighbours() {
+
+
+    public LinkedList<LinkedList<Long>> getNeighbours() {
         JIPTermParser parser = engine.getTermParser();
         JIPQuery engineQuery;
         JIPTerm term;
-        LinkedList<Long> neighbouringIds = new LinkedList<>();
-        engineQuery = engine.openSynchronousQuery(parser.parseTerm("canMoveFromTo(" + node_id + ", Neighbour, _)."));
+        LinkedList<Long> neighbours = new LinkedList<>();
+        LinkedList<LinkedList<Long>> toReturn = new LinkedList<>();
+        engineQuery = engine.openSynchronousQuery(parser.parseTerm("canMoveFromTo(" + node_id + ", Neighbour, Line)."));
         while ((term = engineQuery.nextSolution()) != null) {
-            neighbouringIds.add((long) Double.parseDouble(term.getVariablesTable().get("Neighbour").toString()));
+            neighbours.add((long) Double.parseDouble(term.getVariablesTable().get("Neighbour").toString()));
+            neighbours.add((long) Double.parseDouble(term.getVariablesTable().get("Line").toString()));
+            toReturn.add(neighbours);
         }
-        return neighbouringIds;
+        return toReturn;
     }
 
-    public double calculateDistance(Point target) {
-        return Math.sqrt(Math.pow((target.getX() - this.x), 2) + Math.pow((target.getY() - this.y), 2));
+    public double calculateDistance(Point target,Long lineId,String time) {
+        JIPTermParser parser = engine.getTermParser();
+        JIPQuery engineQuery;
+        JIPTerm term;
+        engineQuery = engine.openSynchronousQuery(parser.parseTerm("traffic(" + lineId + ","+ time+",Traffic)."));
+        double traffic = 1.2;//default traffic when no traffic data are available
+        String maxLimit;
+        int limit = 40;
+        double relativeCost = 1;
+        double actualCost = Math.sqrt(Math.pow((target.getX() - this.x), 2) + Math.pow((target.getY() - this.y), 2));
+        while ((term = engineQuery.nextSolution()) != null) {
+            switch (term.getVariablesTable().get("Traffic").toString()) {
+                case ("medium"):
+                    traffic = 1.4;
+                    break;
+                case ("high"):
+                    traffic = 1.8;
+                    break;
+                case ("low"):
+                    traffic = 1.0;
+                    break;
+                default:
+                    traffic = 1.2;
+                    break;
+            }
+        }
+        engineQuery = engine.openSynchronousQuery(parser.parseTerm("line(" + lineId + ",Type,_,Limit,_,Toll)."));
+        while ((term = engineQuery.nextSolution()) != null) {
+            maxLimit = term.getVariablesTable().get("Limit").toString();
+            if(maxLimit.equals("null")|| maxLimit.isEmpty()){
+                switch (term.getVariablesTable().get("Type").toString()) {
+                    case("motorway"):
+                        limit = 130;
+                        break;
+                    case("motorway_link"):
+                    case("trunk"):
+                        limit = 110;
+                        break;
+                    case("trunk_link"):
+                    case("primary"):
+                        limit = 90;
+                        break;
+                    case("primary_link"):
+                    case("secondary"):
+                        limit = 70;
+                        break;
+                    case("secondary_link"):
+                    case("tertiary"):
+                        limit = 50;
+                        break;
+                    case("tertiary_link"):
+                    case("living_street"):
+                        limit = 30;
+                        break;
+                    default:
+                        limit = 40;
+                        break;
+                }
+            }
+            else
+                limit = Integer.parseInt(maxLimit);
+            if(term.getVariablesTable().get("Toll").toString()!="null"&&term.getVariablesTable().get("Toll").toString()!="no")
+                relativeCost = 2;
+        }
+        relativeCost = relativeCost* traffic *(130.0/limit);
+        return relativeCost*actualCost;
     }
 
     public void calculateHeuristic(Point target) {
-        heuristic = calculateDistance(target);
+        heuristic = Math.sqrt(Math.pow((target.getX() - this.x), 2) + Math.pow((target.getY() - this.y), 2));
     }
 
     @Override

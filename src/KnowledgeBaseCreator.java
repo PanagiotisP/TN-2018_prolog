@@ -1,8 +1,4 @@
-import com.ugos.jiprolog.engine.JIPEngine;
-import com.ugos.jiprolog.engine.JIPQuery;
-import com.ugos.jiprolog.engine.JIPTerm;
-import com.ugos.jiprolog.engine.JIPTermParser;
-import com.ugos.jiprolog.engine.JIPEvaluationException;
+import com.ugos.jiprolog.engine.*;
 
 
 import java.io.FileWriter;
@@ -68,6 +64,45 @@ public class KnowledgeBaseCreator {
         }
     }
 
+    public void addTrafficToBase(String trafficFilename){
+        LinkedList<String[]> fields;
+        csvReader = new CSVReader(trafficFilename);
+        fields = csvReader.readCSV();
+
+        JIPTermParser parser = engine.getTermParser();
+        JIPQuery engineQuery;
+
+        for (String[] trafficFields : fields) {
+            // traffics in prolog in form (LineId, LowTime, HighTime, Intensity)
+            String trafficString;
+            if (trafficFields.length >3 && !trafficFields[2].isEmpty()) {
+                String[] zones = trafficFields[2].split("\\|");
+                for (String z : zones) {
+
+                    String low = z.substring(0, 2);
+                    String high = z.substring(6, 8);
+                    String intensity = z.substring(12);
+                    trafficString = "traffics(" + trafficFields[0] + "," + low + "," + high + "," + intensity + ")";
+                    try {
+                        engineQuery = engine.openSynchronousQuery(parser.parseTerm("assert(" + trafficString + ")."));
+                        if (engineQuery.nextSolution() == null)
+                            throw new JIPEvaluationException("addTraffic: assertion failed");
+                    } catch (JIPSyntaxErrorException e) {
+                        System.out.println(e.getTerm().toString());
+                    }
+
+                }
+            }
+        }
+        //usable rule traffic(LId,Time,Traffic Intensity)
+        String trafficString = "(traffic(Line,Time,Traf) :- traffics(Line, Low, High, Traf), Time > Low, Time =< High)";
+        engineQuery = engine.openSynchronousQuery(parser.parseTerm("assert(" + trafficString + ")."));
+        if (engineQuery.nextSolution() == null)
+            throw new JIPEvaluationException("addTraffic: assertion failed");
+    }
+
+
+
     public void addLinesToBase(String linesFilename) {
         LinkedList<String[]> fields;
         csvReader = new CSVReader(linesFilename);
@@ -116,7 +151,7 @@ public class KnowledgeBaseCreator {
         printWriter.println();
         printWriter.println("validPairing(X) :- taxi(_, _, X, yes, MaxN, TaxiLangs, _), client(_, _, _, _, _, Person, ClientLang), Person =< MaxN, member(ClientLang, TaxiLangs).");
         printWriter.println("direction(Oneway, Res) :- Oneway = yes -> Res = 1 ; (Oneway = -1 -> Res = -1 ; Res = 0).");
-//        printWriter.println("canMoveFromTo(X,Y, ConnectingLine) :- (node(_,_,ConnectingLine, X,IndexX)," +
+        //        printWriter.println("canMoveFromTo(X,Y, ConnectingLine) :- (node(_,_,ConnectingLine, X,IndexX)," +
 //                "line(ConnectingLine, _, Oneway, _, _, _), " +
 //                "drivable(ConnectingLine), " +
 //                "direction(Oneway, Res), " +

@@ -19,6 +19,7 @@ public class Simulation {
         creatorKB.addLinesToBase("lines.csv");
         creatorKB.addNodes("nodes.csv");
 
+        creatorKB.addTrafficToBase("traffic.csv");
         Point.engine = creatorKB.engine;
 
         // find valid taxis
@@ -51,12 +52,15 @@ public class Simulation {
             taxiList[i++] = (new Point(taxiId, taxiX, taxiY));
         }
 
-        engineQuery = engine.openSynchronousQuery(parser.parseTerm("client(X, Y, _, _, _, _, _)."));
+        engineQuery = engine.openSynchronousQuery(parser.parseTerm("client(X, Y, _, _,Time, _, _)."));
         double clientX = 0;
         double clientY = 0;
+        String time="25";
         if ((term = engineQuery.nextSolution()) != null) {
             clientX = Double.parseDouble(term.getVariablesTable().get("X").toString());
             clientY = Double.parseDouble(term.getVariablesTable().get("Y").toString());
+            String s = term.getVariablesTable().get("Time").toString();
+            time = s.substring(2,4);
         }
         double minDistance = 10000.0;
         long targetId = 0;
@@ -129,18 +133,20 @@ public class Simulation {
                     break;
                 }
 
-                for(long neighbourId : top.getNeighbours()) {
+                for(LinkedList<Long> neighbourInfo : top.getNeighbours()) {
+                    long neighbourId = neighbourInfo.getFirst();
+                    long lineId = neighbourInfo.getLast();
                     Point neighbour = graph.get(neighbourId);
-                    if(neighbour == null || top.getPathCost() + top.calculateDistance(neighbour) == neighbour.getPathCost()){
+                    if(neighbour == null || top.getPathCost() + top.calculateDistance(neighbour,lineId,time) == neighbour.getPathCost()){
                         neighbour =  new Point(neighbourId);
-                        neighbour.setPathCost(top.getPathCost() + top.calculateDistance(neighbour));
+                        neighbour.setPathCost(top.getPathCost() + top.calculateDistance(neighbour,lineId,time));
                         neighbour.previous.add(top);
                         neighbour.calculateHeuristic(target);
                         openSet.add(neighbour);
                         graph.put(neighbourId,neighbour);
                     }
-                    else if (top.getPathCost() + top.calculateDistance(neighbour) < neighbour.getPathCost()) {
-                        neighbour.setPathCost(top.getPathCost() + top.calculateDistance(neighbour));
+                    else if (top.getPathCost() + top.calculateDistance(neighbour,lineId,time) < neighbour.getPathCost()) {
+                        neighbour.setPathCost(top.getPathCost() + top.calculateDistance(neighbour,lineId,time));
                         neighbour.previous.clear();
                         neighbour.previous.add(top);
                         openSet.add(neighbour);
