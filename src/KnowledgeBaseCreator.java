@@ -75,10 +75,9 @@ public class KnowledgeBaseCreator {
         for (String[] trafficFields : fields) {
             // traffics in prolog in form (LineId, LowTime, HighTime, Intensity)
             String trafficString;
-            if (trafficFields.length >3 && !trafficFields[2].isEmpty()) {
+            if (trafficFields.length >= 3 && !trafficFields[2].isEmpty()) {
                 String[] zones = trafficFields[2].split("\\|");
                 for (String z : zones) {
-
                     String low = z.substring(0, 2);
                     String high = z.substring(6, 8);
                     String intensity = z.substring(12);

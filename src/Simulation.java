@@ -30,8 +30,6 @@ public class Simulation {
         Point[] taxiList;
 
 
-
-        HashMap<Long, Point> graph = new HashMap<Long, Point>(50000);
         engineQuery = engine.openSynchronousQuery(parser.parseTerm("validPairing(ValidTaxi)."));
         while ((term = engineQuery.nextSolution()) != null) {
             int tempTaxid = Integer.parseInt(term.getVariablesTable().get("ValidTaxi").toString());
@@ -54,12 +52,12 @@ public class Simulation {
         engineQuery = engine.openSynchronousQuery(parser.parseTerm("client(X, Y, _, _,Time, _, _)."));
         double clientX = 0;
         double clientY = 0;
-        String time="25";
+        String time = "25";
         if ((term = engineQuery.nextSolution()) != null) {
             clientX = Double.parseDouble(term.getVariablesTable().get("X").toString());
             clientY = Double.parseDouble(term.getVariablesTable().get("Y").toString());
             String s = term.getVariablesTable().get("Time").toString();
-            time = s.substring(2,4);
+            time = s.substring(2, 4);
         }
         double minDistance = 10000.0;
         long targetId = 0;
@@ -95,11 +93,11 @@ public class Simulation {
         for (i = 0; i < taxiList.length; i++) {
             Point tempPoint = new Point(taxis[i]);
             tempPoint.startingIds.add((int) taxiList[i].getNode_id());
-            tempPoint.taxiIds.add((int) taxiList[i].getNode_id());
+            tempPoint.setTaxiId((int) taxiList[i].getNode_id());
             taxiList[i] = tempPoint;
             taxiList[i].setPathCost(tempdist[i]);
         }
-            // add client to our graph
+        // add client to our graph
 
 
         PriorityQueue<Point> taxiPaths = new PriorityQueue<>(taxis.length, new Comparator<>() {
@@ -114,73 +112,27 @@ public class Simulation {
                     return -1;
             }
         });
-        PriorityQueue<Point> openSet = new PriorityQueue<>(taxis.length, new Comparator<>() {
-            @Override
-            public int compare(Point taxi1, Point taxi2) {
-                double res = taxi1.getHeuristic() + taxi1.getPathCost() - taxi2.getHeuristic() - taxi2.getPathCost();
-                if (res > 0)
-                    return 1;
-                else if (res == 0)
-                    return 0;
-                else
-                    return -1;
-            }
-        });
 
-        HashSet<Point> closedSet = new HashSet<>();
-        int kmlCounter = 0;
+
+        AStar solver = new AStar();
         for (Point taxi : taxiList) {
-            openSet.clear();
-            closedSet.clear();
-            graph.clear();
-            openSet.add(taxi);
-            graph.put(taxi.getNode_id(),taxi);
-            boolean found = false;
-            while(!openSet.isEmpty()) {
-                System.out.println(openSet.size());
-                Point top = openSet.peek();
-                openSet.remove(top);
-                if(!closedSet.contains(top)) {
-                    closedSet.add(top);
-                    if (found && top.getPathCost() + top.getHeuristic() > target.getPathCost()) {
-                        break;
-                    }
-
-                    for (LinkedList<Long> neighbourInfo : top.getNeighbours()) {
-                        long neighbourId = neighbourInfo.getFirst();
-                        long lineId = neighbourInfo.getLast();
-                        Point neighbour = graph.get(neighbourId);
-                        if (neighbour == null || top.getPathCost() + top.calculateCost(neighbour, lineId, time) == neighbour.getPathCost()) {
-                            neighbour = new Point(neighbourId);
-                            neighbour.setPathCost(top.getPathCost() + top.calculateCost(neighbour, lineId, time));
-                            neighbour.setPathDist(top.getPathDist() + top.calculateDistance(neighbour));
-                            neighbour.previous.add(top);
-                            neighbour.calculateHeuristic(target);
-                            openSet.add(neighbour);
-                            graph.put(neighbourId, neighbour);
-                        } else if (top.getPathCost() + top.calculateCost(neighbour, lineId, time) < neighbour.getPathCost()) {
-                            neighbour.setPathCost(top.getPathCost() + top.calculateCost(neighbour, lineId, time));
-                            neighbour.setPathDist(top.getPathDist() + top.calculateDistance(neighbour));
-                            neighbour.previous.clear();
-                            neighbour.previous.add(top);
-                        }
-                        if (neighbour.equals(target)) {
-                            target.previous = neighbour.previous;
-                            found = true;
-                        }
-                    }
-                }
+            Point result = solver.solve(taxi, target, time);
+            if (result != null) {
+                taxiPaths.add(new Point(result));
             }
-            if(found == true) {
-                taxiPaths.add(new Point(target));
-//                KmlWriter outFile = new KmlWriter("Data\\routes" + Integer.toString(kmlCounter) + ".kml");
-//                outFile.printIntroKml();
-//                LinkedList<Point> pathSoFar = new LinkedList<>();
-//                pathSoFar.addFirst(target);
-//                target.printPaths(pathSoFar, outFile);
-//                outFile.endKml();
+        }
+        System.out.println("Taxis by time of arrival to the client: ");
+        for(i = 0; i < 6; i++) {
+            Point currentTaxi = taxiPaths.poll();
+            if(currentTaxi != null) {
+                System.out.println(currentTaxi.getTaxiId() + " with time " + currentTaxi.getPathCost() / 130 + " and distance " + currentTaxi.getPathDist() + '.');
+                KmlWriter outFile = new KmlWriter("Data\\routes" + Integer.toString(i) + ".kml");
+                outFile.printIntroKml();
+                LinkedList<Point> pathSoFar = new LinkedList<>();
+                pathSoFar.addFirst(currentTaxi);
+                target.printPaths(pathSoFar, outFile);
+                outFile.endKml();
             }
-            kmlCounter++;
         }
     }
 }
