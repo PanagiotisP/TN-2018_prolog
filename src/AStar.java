@@ -46,6 +46,7 @@ public class AStar {
                     if (neighbour == null || top.getPathCost() + top.calculateCost(neighbour, lineId, time) == neighbour.getPathCost()) {
                         neighbour = new Point(neighbourId);
                         neighbour.setTaxiId(top.getTaxiId());
+                        neighbour.setRating(top.getRating());
                         neighbour.setPathCost(top.getPathCost() + top.calculateCost(neighbour, lineId, time));
                         neighbour.setPathDist(top.getPathDist() + top.calculateDistance(neighbour));
                         neighbour.previous.add(top);
@@ -64,6 +65,7 @@ public class AStar {
                         target.setPathCost(neighbour.getPathCost());
                         target.setPathDist(neighbour.getPathDist());
                         target.setTaxiId(neighbour.getTaxiId());
+                        target.setRating(neighbour.getRating());
                     }
                 }
             }

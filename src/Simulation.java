@@ -94,6 +94,8 @@ public class Simulation {
             Point tempPoint = new Point(taxis[i]);
             tempPoint.startingIds.add((int) taxiList[i].getNode_id());
             tempPoint.setTaxiId((int) taxiList[i].getNode_id());
+            engineQuery = engine.openSynchronousQuery(parser.parseTerm("taxi(_, _,+ " + tempPoint.getTaxiId() + ", _, _, _, Rating)."));
+            tempPoint.setRating(Double.parseDouble(engineQuery.nextSolution().getVariablesTable().get("Rating").toString()));
             taxiList[i] = tempPoint;
             taxiList[i].setPathCost(tempdist[i]);
         }
@@ -113,25 +115,45 @@ public class Simulation {
             }
         });
 
+        PriorityQueue<Point> taxiPathsRating = new PriorityQueue<>(taxis.length, new Comparator<>() {
+            @Override
+            public int compare(Point taxi1, Point taxi2) {
+                double res = taxi2.getRating() - taxi1.getRating();
+                if (res > 0)
+                    return 1;
+                else if (res == 0)
+                    return 0;
+                else
+                    return -1;
+            }
+        });
 
         AStar solver = new AStar();
         for (Point taxi : taxiList) {
             Point result = solver.solve(taxi, target, time);
             if (result != null) {
                 taxiPaths.add(new Point(result));
+                taxiPathsRating.add(new Point(result));
             }
         }
         System.out.println("Taxis by time of arrival to the client: ");
-        for(i = 0; i < 6; i++) {
+        for (i = 0; i < 5; i++) {
             Point currentTaxi = taxiPaths.poll();
-            if(currentTaxi != null) {
-                System.out.println(currentTaxi.getTaxiId() + " with time " + currentTaxi.getPathCost() / 130 + " and distance " + currentTaxi.getPathDist() + '.');
+            if (currentTaxi != null) {
+                System.out.println("Taxi " + currentTaxi.getTaxiId() + " with time " + currentTaxi.getPathCost() / 130 * 60 + " minutes and distance " + currentTaxi.getPathDist() + " km.");
                 KmlWriter outFile = new KmlWriter("Data\\routes" + Integer.toString(i) + ".kml");
                 outFile.printIntroKml();
                 LinkedList<Point> pathSoFar = new LinkedList<>();
                 pathSoFar.addFirst(currentTaxi);
                 target.printPaths(pathSoFar, outFile);
                 outFile.endKml();
+            }
+        }
+        System.out.println("Taxis by rating: ");
+        for (i = 0; i < 5; i++) {
+            Point currentTaxi = taxiPathsRating.poll();
+            if (currentTaxi != null) {
+                System.out.println("Taxi " + currentTaxi.getTaxiId() + " with rating " + currentTaxi.getRating() + '.');
             }
         }
     }

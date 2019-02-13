@@ -11,6 +11,7 @@ public class Point {
     private double heuristic;
     private double pathCost;
     private double pathDist;
+    private double rating;
     public HashSet<Point> previous;
     public LinkedList<Integer> startingIds;
     private int taxiId = 0;
@@ -42,6 +43,7 @@ public class Point {
         heuristic = toCopy.getHeuristic();
         node_id = toCopy.getNode_id();
         taxiId = toCopy.getTaxiId();
+        rating = toCopy.getRating();
     }
 
     public Point(long tId,double x, double y){
@@ -210,5 +212,13 @@ public class Point {
 
     public void setTaxiId(int taxiId) {
         this.taxiId = taxiId;
+    }
+
+    public double getRating() {
+        return rating;
+    }
+
+    public void setRating(double rating) {
+        this.rating = rating;
     }
 }
