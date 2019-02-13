@@ -4,7 +4,6 @@ import java.lang.String;
 
 import com.ugos.jiprolog.engine.JIPEngine;
 import com.ugos.jiprolog.engine.JIPQuery;
-import com.ugos.jiprolog.engine.JIPSyntaxErrorException;
 import com.ugos.jiprolog.engine.JIPTerm;
 import com.ugos.jiprolog.engine.JIPTermParser;
 
@@ -102,6 +101,19 @@ public class Simulation {
         }
             // add client to our graph
 
+
+        PriorityQueue<Point> taxiPaths = new PriorityQueue<>(taxis.length, new Comparator<>() {
+            @Override
+            public int compare(Point taxi1, Point taxi2) {
+                double res = taxi1.getPathCost() - taxi2.getPathCost();
+                if (res > 0)
+                    return 1;
+                else if (res == 0)
+                    return 0;
+                else
+                    return -1;
+            }
+        });
         PriorityQueue<Point> openSet = new PriorityQueue<>(taxis.length, new Comparator<>() {
             @Override
             public int compare(Point taxi1, Point taxi2) {
@@ -138,18 +150,19 @@ public class Simulation {
                         long neighbourId = neighbourInfo.getFirst();
                         long lineId = neighbourInfo.getLast();
                         Point neighbour = graph.get(neighbourId);
-                        if (neighbour == null || top.getPathCost() + top.calculateDistance(neighbour, lineId, time) == neighbour.getPathCost()) {
+                        if (neighbour == null || top.getPathCost() + top.calculateCost(neighbour, lineId, time) == neighbour.getPathCost()) {
                             neighbour = new Point(neighbourId);
-                            neighbour.setPathCost(top.getPathCost() + top.calculateDistance(neighbour, lineId, time));
+                            neighbour.setPathCost(top.getPathCost() + top.calculateCost(neighbour, lineId, time));
+                            neighbour.setPathDist(top.getPathDist() + top.calculateDistance(neighbour));
                             neighbour.previous.add(top);
                             neighbour.calculateHeuristic(target);
                             openSet.add(neighbour);
                             graph.put(neighbourId, neighbour);
-                        } else if (top.getPathCost() + top.calculateDistance(neighbour, lineId, time) < neighbour.getPathCost()) {
-                            neighbour.setPathCost(top.getPathCost() + top.calculateDistance(neighbour, lineId, time));
+                        } else if (top.getPathCost() + top.calculateCost(neighbour, lineId, time) < neighbour.getPathCost()) {
+                            neighbour.setPathCost(top.getPathCost() + top.calculateCost(neighbour, lineId, time));
+                            neighbour.setPathDist(top.getPathDist() + top.calculateDistance(neighbour));
                             neighbour.previous.clear();
                             neighbour.previous.add(top);
-                            //openSet.add(neighbour);
                         }
                         if (neighbour.equals(target)) {
                             target.previous = neighbour.previous;
@@ -159,12 +172,13 @@ public class Simulation {
                 }
             }
             if(found == true) {
-                KmlWriter outFile = new KmlWriter("Data\\routes" + Integer.toString(kmlCounter) + ".kml");
-                outFile.printIntroKml();
-                LinkedList<Point> pathSoFar = new LinkedList<>();
-                pathSoFar.addFirst(target);
-                target.printPaths(pathSoFar, outFile);
-                outFile.endKml();
+                taxiPaths.add(new Point(target));
+//                KmlWriter outFile = new KmlWriter("Data\\routes" + Integer.toString(kmlCounter) + ".kml");
+//                outFile.printIntroKml();
+//                LinkedList<Point> pathSoFar = new LinkedList<>();
+//                pathSoFar.addFirst(target);
+//                target.printPaths(pathSoFar, outFile);
+//                outFile.endKml();
             }
             kmlCounter++;
         }

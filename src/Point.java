@@ -10,6 +10,7 @@ public class Point {
     private long node_id;
     private double heuristic;
     private double pathCost;
+    private double pathDist;
     public HashSet<Point> previous;
     public LinkedList<Integer> startingIds;
     public LinkedList<Integer> taxiIds;
@@ -32,6 +33,16 @@ public class Point {
         taxiIds = new LinkedList<>();
     }
 
+    public Point(Point toCopy){
+        x = toCopy.getX();
+        y = toCopy.getY();
+        pathCost = toCopy.getPathCost();
+        pathDist = toCopy.getPathDist();
+        previous = toCopy.previous;
+                //new HashSet<Point>(toCopy.previous);
+        heuristic = toCopy.getHeuristic();
+        node_id = toCopy.getNode_id();
+    }
     public Point(long tId,double x, double y){
         this.x = x;
         this.y = y;
@@ -55,29 +66,29 @@ public class Point {
         return toReturn;
     }
 
-    public double calculateDistance(Point target,Long lineId,String time) {
+    public double calculateCost(Point target, Long lineId, String time) {
         JIPTermParser parser = engine.getTermParser();
         JIPQuery engineQuery;
         JIPTerm term;
         engineQuery = engine.openSynchronousQuery(parser.parseTerm("traffic(" + lineId + ","+ time+",Traffic)."));
-        double traffic = 1.2;//default traffic when no traffic data are available
+        double traffic = 1.5;//default traffic when no traffic data are available
         String maxLimit;
         int limit = 40;
         double relativeCost = 1;
-        double actualCost = Math.sqrt(Math.pow((target.getX() - this.x), 2) + Math.pow((target.getY() - this.y), 2));
+        double actualCost = Haversine.distance(target.getY(),this.y,target.getX(),this.x);
         while ((term = engineQuery.nextSolution()) != null) {
             switch (term.getVariablesTable().get("Traffic").toString()) {
                 case ("medium"):
-                    traffic = 1.4;
+                    traffic = 1.5;
                     break;
                 case ("high"):
-                    traffic = 1.8;
+                    traffic = 2;
                     break;
                 case ("low"):
                     traffic = 1.0;
                     break;
                 default:
-                    traffic = 1.2;
+                    traffic = 1.5;
                     break;
             }
         }
@@ -119,12 +130,16 @@ public class Point {
             if(term.getVariablesTable().get("Toll").toString()!="null"&&term.getVariablesTable().get("Toll").toString()!="no")
                 relativeCost = 2;
         }
-        relativeCost = relativeCost* traffic *(130.0/limit);
+        relativeCost = relativeCost * traffic /limit;
         return relativeCost*actualCost;
     }
 
     public void calculateHeuristic(Point target) {
-        heuristic = Math.sqrt(Math.pow((target.getX() - this.x), 2) + Math.pow((target.getY() - this.y), 2));
+        heuristic = calculateDistance(target);
+    }
+
+    public double calculateDistance(Point target){
+        return Haversine.distance(target.getY(),this.y,target.getX(),this.x);
     }
 
     @Override
@@ -180,4 +195,11 @@ public class Point {
         return node_id;
     }
 
+    public double getPathDist() {
+        return pathDist;
+    }
+
+    public void setPathDist(double pathDist) {
+        this.pathDist = pathDist;
+    }
 }
