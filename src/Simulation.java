@@ -12,24 +12,33 @@ public class Simulation {
     public static void main(String[] args) throws IOException {
         String kb = "knowledgeBase.pl";
         KnowledgeBaseCreator creatorKB = new KnowledgeBaseCreator(kb);
+
+        // add basic rules and axioms
         creatorKB.addRulesToBase();
+
+        // add data
         creatorKB.addTaxisToBase("taxis.csv");
         creatorKB.addClientToBase("client.csv");
         creatorKB.addLinesToBase("lines.csv");
         creatorKB.addNodes("nodes.csv");
-
         creatorKB.addTrafficToBase("traffic.csv");
+
+        // every point shares the same engine to avoid time consuming consults.
         Point.engine = creatorKB.engine;
 
-        // find valid taxis
+        // initialize prolog engine
         JIPEngine engine = Point.engine;
         JIPTermParser parser = engine.getTermParser();
         JIPQuery engineQuery;
         JIPTerm term;
+
+        // taxiIdList stores taxis' ids
         LinkedList<Integer> taxiIdList = new LinkedList<>();
+
+        // taxiList stores taxis' Points
         Point[] taxiList;
 
-
+        // find valid taxis' Ids
         engineQuery = engine.openSynchronousQuery(parser.parseTerm("validPairing(ValidTaxi)."));
         while ((term = engineQuery.nextSolution()) != null) {
             int tempTaxid = Integer.parseInt(term.getVariablesTable().get("ValidTaxi").toString());
@@ -49,6 +58,7 @@ public class Simulation {
             taxiList[i++] = (new Point(taxiId, taxiX, taxiY));
         }
 
+        // create client Point in the same way as above
         engineQuery = engine.openSynchronousQuery(parser.parseTerm("client(X, Y, DestX,DestY,Time, _, _)."));
         double clientX = 0;
         double clientY = 0;
@@ -63,25 +73,30 @@ public class Simulation {
             destinationX = Double.parseDouble(term.getVariablesTable().get("DestX").toString());
             destinationY = Double.parseDouble(term.getVariablesTable().get("DestY").toString());
         }
+
         double minDistance = 10000.0;
         long targetId = 0;
         double destDist = 10000.0;
         long destId = 0;
 
-        JIPQuery engineNodeQuery = engine.openSynchronousQuery(parser.parseTerm("node(Id, _, X, Y)."));
-        double[] tempdist = new double[taxiIdList.size()];
-        for (i = 0; i < tempdist.length; i++) {
-            tempdist[i] = 10000.0;
+        // tempDist iteratively updates distance to find the minimum distance node
+        double[] tempDist = new double[taxiIdList.size()];
+
+        // initialize with large ig value
+        for (i = 0; i < tempDist.length; i++) {
+            tempDist[i] = 10000.0;
         }
+
+        // store the node_id values of minimun distance nodes
         Long[] taxis = new Long[taxiIdList.size()];
+
+        // loop over every node to find minimum distance node for every taxi and for client
+        JIPQuery engineNodeQuery = engine.openSynchronousQuery(parser.parseTerm("node(Id, _, X, Y)."));
         while ((term = engineNodeQuery.nextSolution()) != null) {
             long tempid = (long) Double.parseDouble(term.getVariablesTable().get("Id").toString());
             double tempX = Double.parseDouble(term.getVariablesTable().get("X").toString());
             double tempY = Double.parseDouble(term.getVariablesTable().get("Y").toString());
             double tempdistance;
-//            if(!graph.containsKey(tempid)) {
-//                Point tempPoint = new Point(tempid);
-//                graph.put(tempid, tempPoint);
             tempdistance = Haversine.distance(clientX,clientY,tempX,tempY);
             if (tempdistance < minDistance) {
                 targetId = tempid;
@@ -94,14 +109,17 @@ public class Simulation {
             }
             for (i = 0; i < taxiList.length; i++) {
                 tempdistance = Haversine.distance(taxiList[i].getX(),taxiList[i].getY(),tempX,tempY);
-                if (tempdistance < tempdist[i]) {
-                    tempdist[i] = tempdistance;
+                if (tempdistance < tempDist[i]) {
+                    tempDist[i] = tempdistance;
                     taxis[i] = tempid;
                 }
             }
         }
+        // create client and destination points
         Point target = new Point(targetId);
         Point destination = new Point(destId);
+
+        // create taxi Points and add startingIds (for KML file), TaxiId and Rating (for output)
         for (i = 0; i < taxiList.length; i++) {
             Point tempPoint = new Point(taxis[i]);
             tempPoint.startingIds.add((int) taxiList[i].getNode_id());
@@ -109,12 +127,11 @@ public class Simulation {
             engineQuery = engine.openSynchronousQuery(parser.parseTerm("taxi(_, _,+ " + tempPoint.getTaxiId() + ", _, _, _, Rating)."));
             tempPoint.setRating(Double.parseDouble(engineQuery.nextSolution().getVariablesTable().get("Rating").toString()));
             taxiList[i] = tempPoint;
-            taxiList[i].setPathCost(tempdist[i]);
+            taxiList[i].setPathCost(tempDist[i]);
         }
-        // add client to our graph
 
-
-        PriorityQueue<Point> taxiPaths = new PriorityQueue<>(taxis.length, new Comparator<>() {
+        // create two priorityQueues to sort end taxis' routes by rating and by cost
+        PriorityQueue<Point> taxiPathsCost = new PriorityQueue<>(taxis.length, new Comparator<>() {
             @Override
             public int compare(Point taxi1, Point taxi2) {
                 double res = taxi1.getPathCost() - taxi2.getPathCost();
@@ -140,20 +157,23 @@ public class Simulation {
             }
         });
 
+        // class to run the algorithm
         AStar solver = new AStar();
         for (Point taxi : taxiList) {
             Point result = solver.solve(taxi, target, time);
             if (result != null) {
-                taxiPaths.add(new Point(result));
-                taxiPathsRating.add(new Point(result));
+                taxiPathsCost.add(new Point(result));
             }
         }
 
-
-        System.out.println("Taxis by time of arrival to the client: ");
+        // output and KML files
+        System.out.println("Taxis by time of arrival at the client: ");
         for (i = 0; i < 5; i++) {
-            Point currentTaxi = taxiPaths.poll();
+            Point currentTaxi = taxiPathsCost.poll();
             if (currentTaxi != null) {
+
+                // sort top 5 taxis by rating
+                taxiPathsRating.add(new Point(currentTaxi));
                 System.out.println("Taxi " + currentTaxi.getTaxiId() + " with approx. time " + Math.round(currentTaxi.getPathCost() / 13 * 6) + " min and distance " + Math.round(currentTaxi.getPathDist()*100)/100.0 + " km.");
                 KmlWriter outFile = new KmlWriter("Data\\routes" + Integer.toString(i) + ".kml");
                 outFile.printIntroKml();
@@ -171,6 +191,7 @@ public class Simulation {
             }
         }
 
+        // run A* one additional time to find the route between client and destination
         Point startRoute = new Point(target.getNode_id());
         startRoute.startingIds.add(0);
         Point finalDestination = solver.solve(startRoute, destination,Integer.toString(Integer.parseInt(time) + 1));

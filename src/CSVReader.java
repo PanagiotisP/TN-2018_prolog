@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.lang.String;
 
+// this class reads a CSV file and returns its data in form of tokenized strings
 public class CSVReader {
 
     private String csvFile;

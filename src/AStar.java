@@ -2,6 +2,8 @@ import java.util.*;
 
 public class AStar {
     private HashSet<Point> closedSet;
+
+    // graph to store nodes which have been created to avoid multiple creations and to have shared
     private HashMap<Long, Point> graph;
     private PriorityQueue<Point> openSet;
 
@@ -26,11 +28,12 @@ public class AStar {
         closedSet.clear();
         graph.clear();
         openSet.clear();
+
+        // start openSet with one Point (a taxi Point)
         openSet.add(start);
         graph.put(start.getNode_id(), start);
         boolean found = false;
         while (!openSet.isEmpty()) {
-            //System.out.println(openSet.size());
             Point top = openSet.peek();
             openSet.remove(top);
             if (!closedSet.contains(top)) {
@@ -44,6 +47,8 @@ public class AStar {
                     long lineId = neighbourInfo.getLast();
                     Point neighbour = graph.get(neighbourId);
                     if (neighbour == null || top.getPathCost() + top.calculateCost(neighbour, lineId, time) == neighbour.getPathCost()) {
+
+                        // create new Point and set its variables
                         neighbour = new Point(neighbourId);
                         neighbour.setTaxiId(top.getTaxiId());
                         neighbour.setRating(top.getRating());
@@ -51,15 +56,21 @@ public class AStar {
                         neighbour.setPathDist(top.getPathDist() + top.calculateDistance(neighbour));
                         neighbour.previous.add(top);
                         neighbour.calculateHeuristic(target);
+
+                        // add the new Point to the openSet and the graph
                         openSet.add(neighbour);
                         graph.put(neighbourId, neighbour);
                     } else if (top.getPathCost() + top.calculateCost(neighbour, lineId, time) < neighbour.getPathCost()) {
+
+                        // update existing point
                         neighbour.setPathCost(top.getPathCost() + top.calculateCost(neighbour, lineId, time));
                         neighbour.setPathDist(top.getPathDist() + top.calculateDistance(neighbour));
                         neighbour.previous.clear();
                         neighbour.previous.add(top);
                     }
                     if (neighbour.equals(target)) {
+
+                        // set target variables same as found point (used for return)
                         target.previous = neighbour.previous;
                         found = true;
                         target.setPathCost(neighbour.getPathCost());
