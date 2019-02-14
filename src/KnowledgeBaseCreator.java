@@ -140,9 +140,9 @@ public class KnowledgeBaseCreator {
 
         String[] accessibility = {"yes", "permissive", "destination", "null", "allowed"};
         for(String accessibilityType : accessibility) {
-            printWriter.println("validAccessibility(" + accessibilityType + ").");
+            printWriter.println("validAccess(" + accessibilityType + ").");
         }
-        printWriter.println("drivable(Highway, Access) :- validAccessibility(Access), validHighway(Highway).");
+        printWriter.println("drivable(Highway, Access) :- validAccess(Access), validHighway(Highway).");
         printWriter.println();
         printWriter.println("validPairing(X) :- taxi(_, _, X, yes, MaxN, TaxiLangs, _), client(_, _, _, _, _, Person, ClientLang), Person =< MaxN, member(ClientLang, TaxiLangs).");
         printWriter.println("direction(Oneway, Res) :- Oneway = yes -> Res = 1 ; (Oneway = -1 -> Res = -1 ; Res = 0).");
@@ -173,8 +173,9 @@ public class KnowledgeBaseCreator {
             engineQuery = engine.openSynchronousQuery(parser.parseTerm("line(" + nodesFields[2] + ", _, Oneway, _, _, _)."));
             if ((term = engineQuery.nextSolution()) != null) {
                 if ((long) Double.parseDouble(nodesFields[2]) == lastLineId) {
-                    switch (term.getVariablesTable().get("Oneway").toString()) {
-                        case "yes":
+                    engineQuery = engine.openSynchronousQuery(parser.parseTerm("direction(" + term.getVariablesTable().get("Oneway").toString() + ", Res)."));
+                    switch ((term = engineQuery.nextSolution()).getVariablesTable().get("Res").toString()) {
+                        case "1":
                             nodeQuery = engine.openSynchronousQuery(parser.parseTerm("assert(canMoveFromTo(" +
                                     Long.toString(lastNodeId) + ',' + nodesFields[3] + ',' + Long.toString(lastLineId) + "))."));
                             if (nodeQuery.nextSolution() == null) throw new JIPEvaluationException("addLine: assertion failed");

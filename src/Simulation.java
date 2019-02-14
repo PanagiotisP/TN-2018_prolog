@@ -148,7 +148,8 @@ public class Simulation {
                 taxiPathsRating.add(new Point(result));
             }
         }
-        Point finalDestination = solver.solve(new Point(target.getNode_id()),destination,time+1);
+
+
         System.out.println("Taxis by time of arrival to the client: ");
         for (i = 0; i < 5; i++) {
             Point currentTaxi = taxiPaths.poll();
@@ -170,6 +171,9 @@ public class Simulation {
             }
         }
 
+        Point startRoute = new Point(target.getNode_id());
+        startRoute.startingIds.add(0);
+        Point finalDestination = solver.solve(startRoute, destination,Integer.toString(Integer.parseInt(time) + 1));
 
         if(finalDestination != null){
             double duration = (finalDestination.getPathCost() * 60) / 130 ;
@@ -177,7 +181,7 @@ public class Simulation {
             KmlWriter outFile = new KmlWriter("Data\\route_to_destination.kml");
             outFile.printIntroKml();
             LinkedList<Point> pathSoFar = new LinkedList<>();
-            pathSoFar.addFirst(target);
+            pathSoFar.addFirst(finalDestination);
             destination.printPaths(pathSoFar, outFile);
             outFile.endKml();
         }
