@@ -39,7 +39,6 @@ public class Point {
         pathCost = toCopy.getPathCost();
         pathDist = toCopy.getPathDist();
         previous = toCopy.previous;
-                //new HashSet<Point>(toCopy.previous);
         heuristic = toCopy.getHeuristic();
         node_id = toCopy.getNode_id();
         taxiId = toCopy.getTaxiId();
@@ -72,7 +71,7 @@ public class Point {
         JIPQuery engineQuery;
         JIPTerm term;
         engineQuery = engine.openSynchronousQuery(parser.parseTerm("traffic(" + Long.toString(lineId)+ "," + time + ",Traffic)."));
-        double traffic = 1.5;//default traffic when no traffic data are available
+        double traffic = 2.5;//default traffic when no traffic data are available
         String maxLimit;
         int limit = 40;
         boolean toll = false;
@@ -81,16 +80,16 @@ public class Point {
         while ((term = engineQuery.nextSolution()) != null) {
             switch (term.getVariablesTable().get("Traffic").toString()) {
                 case ("high"):
-                    traffic = 3;
+                    traffic = 5;
                     break;
                 case ("medium"):
-                    traffic = 2;
+                    traffic = 3;
                     break;
                 case ("low"):
                     traffic = 1.0;
                     break;
                 default:
-                    traffic = 2;
+                    traffic = 2.5;
                     break;
             }
         }
@@ -144,6 +143,7 @@ public class Point {
     public double calculateDistance(Point target){
         return Haversine.distance(target.getY(),target.getX(), this.y ,this.x);
     }
+
 
     @Override
     public int hashCode() {

@@ -93,11 +93,7 @@ public class KnowledgeBaseCreator {
                 }
             }
         }
-        //usable rule traffic(LId,Time,Traffic Intensity)
-        String trafficString = "(traffic(Line,Time,Traf) :- traffics(Line, Low, High, Traf), Time > Low, Time =< High)";
-        engineQuery = engine.openSynchronousQuery(parser.parseTerm("assert(" + trafficString + ")."));
-        if (engineQuery.nextSolution() == null)
-            throw new JIPEvaluationException("addTraffic: assertion failed");
+
     }
 
 
@@ -150,6 +146,8 @@ public class KnowledgeBaseCreator {
         printWriter.println();
         printWriter.println("validPairing(X) :- taxi(_, _, X, yes, MaxN, TaxiLangs, _), client(_, _, _, _, _, Person, ClientLang), Person =< MaxN, member(ClientLang, TaxiLangs).");
         printWriter.println("direction(Oneway, Res) :- Oneway = yes -> Res = 1 ; (Oneway = -1 -> Res = -1 ; Res = 0).");
+        //usable rule traffic(LId,Time,Traffic Intensity)
+        printWriter.println("(traffic(Line,Time,Traf) :- traffics(Line, Low, High, Traf), Time > Low, Time =< High).");
         printWriter.close();
         try {
             engine.consultFile(filename);

@@ -30,7 +30,7 @@ public class AStar {
         graph.put(start.getNode_id(), start);
         boolean found = false;
         while (!openSet.isEmpty()) {
-            System.out.println(openSet.size());
+            //System.out.println(openSet.size());
             Point top = openSet.peek();
             openSet.remove(top);
             if (!closedSet.contains(top)) {
